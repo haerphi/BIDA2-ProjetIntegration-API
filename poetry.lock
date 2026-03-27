@@ -66,6 +66,45 @@ docs = ["furo (>=2024.8.6)", "sphinx (>=5.0)", "sphinx-copybutton", "sphinx-notf
 testing = ["coverage[toml] (>=5.0a4)", "pytest (>=4.6.11)", "setuptools (>=71.0.0)"]
 
 [[package]]
+name = "django-stubs"
+version = "6.0.1"
+description = "Mypy stubs for Django"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "django_stubs-6.0.1-py3-none-any.whl", hash = "sha256:d885044bd0876610f3eb969d6b5ed22f386002a879fdcb369cd8efa0502dbbce"},
+    {file = "django_stubs-6.0.1.tar.gz", hash = "sha256:e1ca63634221b57a55e16562b9b6d1849aeee2cabfd0fc026084dbe8aa893366"},
+]
+
+[package.dependencies]
+django = "*"
+django-stubs-ext = ">=6.0.1"
+types-pyyaml = "*"
+typing-extensions = ">=4.11.0"
+
+[package.extras]
+compatible-mypy = ["mypy (>=1.13,<1.20)"]
+oracle = ["oracledb"]
+redis = ["redis", "types-redis"]
+
+[[package]]
+name = "django-stubs-ext"
+version = "6.0.1"
+description = "Monkey-patching and extensions for django-stubs"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "django_stubs_ext-6.0.1-py3-none-any.whl", hash = "sha256:17415759b9a3f4b4da7998ac3b08c7dc5137f9a019490b918aece1a8a4c2ade4"},
+    {file = "django_stubs_ext-6.0.1.tar.gz", hash = "sha256:633b280f89c0cbb7e3ce2f2f842e0acc43d8091378e75f84921d6be675d052dc"},
+]
+
+[package.dependencies]
+django = "*"
+typing-extensions = "*"
+
+[[package]]
 name = "djangorestframework"
 version = "3.17.1"
 description = "Web APIs for Django, made easy."
@@ -79,6 +118,29 @@ files = [
 
 [package.dependencies]
 django = ">=4.2"
+
+[[package]]
+name = "djangorestframework-stubs"
+version = "3.16.8"
+description = "PEP-484 stubs for django-rest-framework"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "djangorestframework_stubs-3.16.8-py3-none-any.whl", hash = "sha256:c5bf61def0f330a071dd5f470f05710189d06c467b3f3e186b32c5a23d4952fb"},
+    {file = "djangorestframework_stubs-3.16.8.tar.gz", hash = "sha256:f6d464b54fa2f929610e957446c04e6ac29558265418e0a2d9f653a4cdd410b5"},
+]
+
+[package.dependencies]
+django-stubs = ">=5.2.8"
+types-pyyaml = "*"
+typing-extensions = ">=4.0"
+
+[package.extras]
+compatible-mypy = ["django-stubs[compatible-mypy]", "mypy (>=1.13,<1.20)"]
+coreapi = ["coreapi (>=2.0.0)"]
+markdown = ["types-markdown (>=0.1.5)"]
+requests = ["types-requests"]
 
 [[package]]
 name = "drf-spectacular"
@@ -471,6 +533,30 @@ dev = ["build"]
 doc = ["sphinx"]
 
 [[package]]
+name = "types-pyyaml"
+version = "6.0.12.20250915"
+description = "Typing stubs for PyYAML"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "types_pyyaml-6.0.12.20250915-py3-none-any.whl", hash = "sha256:e7d4d9e064e89a3b3cae120b4990cd370874d2bf12fa5f46c97018dd5d3c9ab6"},
+    {file = "types_pyyaml-6.0.12.20250915.tar.gz", hash = "sha256:0f8b54a528c303f0e6f7165687dd33fafa81c807fcac23f632b63aa624ced1d3"},
+]
+
+[[package]]
+name = "typing-extensions"
+version = "4.15.0"
+description = "Backported and Experimental Type Hints for Python 3.9+"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "typing_extensions-4.15.0-py3-none-any.whl", hash = "sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"},
+    {file = "typing_extensions-4.15.0.tar.gz", hash = "sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466"},
+]
+
+[[package]]
 name = "tzdata"
 version = "2025.3"
 description = "Provider of IANA time zone data"
@@ -498,4 +584,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4"
-content-hash = "3a3658fa94983a2992c9706cbbfe3c5cfb89e5f830acefe965575cf2eb2bfb7b"
+content-hash = "5ca994135137704b07ea8d1e8969b70a635cffb6d569c55fd87a43204168e2ae"

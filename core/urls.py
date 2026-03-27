@@ -15,13 +15,19 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from .views import HelloWorldView
+from rest_framework.routers import DefaultRouter
+from members.views import UserProfileViewSet
+
+router = DefaultRouter()
+router.register(r'users', UserProfileViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/hello/', HelloWorldView.as_view(), name='hello-world'),
+    path('api/', include(router.urls)),
 
     # Génération du schéma YAML/JSON
 
