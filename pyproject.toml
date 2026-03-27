@@ -1,0 +1,20 @@
+[project]
+name = "api-tennisclub"
+version = "0.0.1"
+description = ""
+authors = [
+    {name = "Philippe Haerens",email = "haerphi@gmail.com"}
+]
+requires-python = ">=3.13,<4"
+dependencies = [
+    "django (>=6.0.3,<7.0.0)",
+    "djangorestframework (>=3.17.1,<4.0.0)",
+    "psycopg2-binary (>=2.9.11,<3.0.0)",
+    "django-environ (>=0.13.0,<0.14.0)",
+    "drf-spectacular (>=0.29.0,<0.30.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
