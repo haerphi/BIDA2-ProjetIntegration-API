@@ -17,17 +17,22 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
-from .views import HelloWorldView
 from rest_framework.routers import DefaultRouter
-from members.views import UserProfileViewSet
+from rest_framework_simplejwt.views import TokenRefreshView
+from .views import HelloWorldView, CustomTokenObtainPairView
+from members.views import MemberProfileViewSet
 
 router = DefaultRouter()
-router.register(r'users', UserProfileViewSet)
+router.register(r'members', MemberProfileViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/hello/', HelloWorldView.as_view(), name='hello-world'),
     path('api/', include(router.urls)),
+
+    # Authentification
+    path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
     # Génération du schéma YAML/JSON
 
