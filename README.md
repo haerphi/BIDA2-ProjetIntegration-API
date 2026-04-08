@@ -46,7 +46,7 @@ Le numéro d’affiliation est composé de 7 chiffres et peut pas commencer par 
 ## Installation
 
 ```bash
-poetry install
+poetry install --no-root
 ```
 
 ## Configuration

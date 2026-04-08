@@ -32,7 +32,8 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'django_filters',
 
-    'members'
+    'members',
+    'courts',
 ]
 
 MIDDLEWARE = [

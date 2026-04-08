@@ -21,9 +21,11 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import HelloWorldView, CustomTokenObtainPairView
 from members.views import MemberProfileViewSet
+from courts.views import CourtViewSet
 
 router = DefaultRouter()
 router.register(r'members', MemberProfileViewSet)
+router.register(r'courts', CourtViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),

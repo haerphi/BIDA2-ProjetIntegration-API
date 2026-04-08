@@ -164,3 +164,56 @@
   ```
 
 - GET /api/members/me/ : Retrieve the logged-in member's profile
+
+## Courts
+
+- GET /api/courts/ : List all courts (authenticated)
+  - Response :
+
+  ```json
+  [
+    {
+      "id": 1,
+      "number": 1
+    }
+  ]
+  ```
+
+- GET /api/courts/<id>/ : Retrieve a court (authenticated)
+  - Response :
+
+  ```json
+  {
+    "id": 1,
+    "number": 1
+  }
+  ```
+
+- POST /api/courts/ : Create a court (admin only)
+  - Request :
+
+  ```json
+  {
+    "number": 1
+  }
+  ```
+
+- PUT /api/courts/<id>/ : Update a court (admin only)
+  - Request :
+
+  ```json
+  {
+    "number": 2
+  }
+  ```
+
+- PATCH /api/courts/<id>/ : Partial update of a court (admin only)
+  - Request :
+
+  ```json
+  {
+    "number": 2
+  }
+  ```
+
+- DELETE /api/courts/<id>/ : Delete a court (admin only)
