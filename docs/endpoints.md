@@ -1,5 +1,42 @@
 # Endpoints
 
+## Authentication
+
+- POST /api/token/ : Obtenir un jeton d'accès et un jeton de rafraîchissement (Login)
+  - Requête :
+
+  ```json
+  {
+    "affiliation_number": "1234567",
+    "password": "password"
+  }
+  ```
+
+  - Réponse :
+
+  ```json
+  {
+    "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+  ```
+
+- POST /api/token/refresh/ : Rafraîchir le jeton d'accès
+  - Requête :
+
+  ```json
+  {
+    "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+  ```
+
+  - Réponse :
+
+  ```json
+  {
+    "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+  ```
 ## Members
 
 - GET /api/members/ : List all members (authenticated)

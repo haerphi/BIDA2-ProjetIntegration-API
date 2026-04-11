@@ -122,6 +122,6 @@ STATIC_URL = 'static/'
 
 # Custom Authentication Backends
 AUTHENTICATION_BACKENDS = [
-    'core.backends.EmailBackend',
+    'core.backends.AffiliationNumberBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
