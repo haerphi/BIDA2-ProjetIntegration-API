@@ -55,16 +55,22 @@ poetry install --no-root
 cp .env.example .env
 ```
 
+## Migration
+
+```bash
+poetry run python src/manage.py migrate --settings=core.settings.local
+```
+
 ## Lancement
 
 ```bash
-poetry run python manage.py runserver --settings=core.settings.local
+poetry run python src/manage.py runserver --settings=core.settings.local
 ```
 
 ## Tests
 
 ```bash
-poetry run python manage.py test
+poetry run python src/manage.py test
 ```
 
 ## Swagger

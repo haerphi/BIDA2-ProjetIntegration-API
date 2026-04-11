@@ -4,7 +4,7 @@ import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # Updated for modular config: core/settings/base.py -> API-TennisClub
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 # Setup environment variables
 env = environ.Env(DEBUG=(bool, False))
