@@ -6,15 +6,15 @@ from rest_framework.response import Response
 from core.accounts.permissions import IsAdminRole
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
-from .models import MemberProfile
+from .models import Member
 from .serializers import (
-    MemberProfileSerializer, 
-    MemberProfileCreateSerializer, 
+    MemberSerializer, 
+    MemberCreateSerializer, 
     PasswordUpdateSerializer
 )
 
-class MemberProfileViewSet(viewsets.GenericViewSet):
-    queryset = MemberProfile.objects.all()
+class MemberViewSet(viewsets.GenericViewSet):
+    queryset = Member.objects.all()
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = [
         'ranking', 'gender', 'is_active', 'affiliation_number', 
@@ -25,10 +25,10 @@ class MemberProfileViewSet(viewsets.GenericViewSet):
 
     def get_serializer_class(self):
         if self.action == 'create':
-            return MemberProfileCreateSerializer
+            return MemberCreateSerializer
         elif self.action in ['set_password', 'me_set_password']:
             return PasswordUpdateSerializer
-        return MemberProfileSerializer
+        return MemberSerializer
 
     def get_permissions(self):
         admin_actions = ['create', 'update', 'partial_update', 'destroy', 'set_password']
@@ -106,8 +106,8 @@ class MemberProfileViewSet(viewsets.GenericViewSet):
         """ Route: GET /api/members/me/ (Logged-in member profile) """
         try:
             member = request.user.profile
-        except getattr(MemberProfile, 'DoesNotExist', Exception):
-            return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+        except getattr(Member, 'DoesNotExist', Exception):
+            return Response({'error': ' not found'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = self.get_serializer(member)
         return Response(serializer.data)
@@ -117,8 +117,8 @@ class MemberProfileViewSet(viewsets.GenericViewSet):
         """ Route: PUT /api/members/me/ (Logged-in member profile update) """
         try:
             member = request.user.profile
-        except getattr(MemberProfile, 'DoesNotExist', Exception):
-            return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+        except getattr(Member, 'DoesNotExist', Exception):
+            return Response({'error': ' not found'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = self.get_serializer(member, data=request.data)
         if serializer.is_valid():
@@ -131,11 +131,11 @@ class MemberProfileViewSet(viewsets.GenericViewSet):
         """ Route: DELETE /api/members/me/ (Logged-in member profile deletion) """
         try:
             member = request.user.profile
-        except getattr(MemberProfile, 'DoesNotExist', Exception):
-            return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+        except getattr(Member, 'DoesNotExist', Exception):
+            return Response({'error': ' not found'}, status=status.HTTP_404_NOT_FOUND)
 
         if member.user:
-            member.user.delete() # Deleting the User also deletes the MemberProfile by cascade
+            member.user.delete() # Deleting the User also deletes the Member by cascade
         else:
             member.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -145,8 +145,8 @@ class MemberProfileViewSet(viewsets.GenericViewSet):
         """ Route: PATCH /api/members/me/set_password/ """
         try:
             member = request.user.profile
-        except getattr(MemberProfile, 'DoesNotExist', Exception):
-            return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+        except getattr(Member, 'DoesNotExist', Exception):
+            return Response({'error': ' not found'}, status=status.HTTP_404_NOT_FOUND)
             
         serializer = self.get_serializer(data=request.data)
         

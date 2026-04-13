@@ -1,11 +1,11 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import MemberProfile
+from .models import Member
 
 
-class MemberProfileSerializer(serializers.ModelSerializer):
+class MemberSerializer(serializers.ModelSerializer):
     class Meta:
-        model = MemberProfile
+        model = Member
         fields = [
             'id', 'user', 'firstname', 'lastname', 'email', 'street', 'city',
             'postal_code', 'country', 'phone', 'birth_date', 'gender',
@@ -42,11 +42,11 @@ class MemberProfileSerializer(serializers.ModelSerializer):
         return instance
 
 
-class MemberProfileCreateSerializer(serializers.ModelSerializer):
+class MemberCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
 
     class Meta:
-        model = MemberProfile
+        model = Member
         fields = [
             'id', 'user', 'firstname', 'lastname', 'email', 'street', 'city',
             'postal_code', 'country', 'phone', 'birth_date', 'gender',

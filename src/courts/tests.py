@@ -5,7 +5,7 @@ from rest_framework import status
 from django.utils import timezone
 from datetime import timedelta
 from courts.models import Court, Reservation
-from members.models import MemberProfile
+from members.models import Member
 
 User = get_user_model()
 
@@ -20,7 +20,7 @@ class CourtAPITests(TestCase):
             email='normal@example.com'
         )
         if not hasattr(self.normal_user, 'profile'):
-            MemberProfile.objects.create(user=self.normal_user, role='member', firstname='Normal', lastname='User', email=self.normal_user.email)
+            Member.objects.create(user=self.normal_user, role='member', firstname='Normal', lastname='User', email=self.normal_user.email)
         else:
             self.normal_user.profile.role = 'member'
             self.normal_user.profile.save()
@@ -32,7 +32,7 @@ class CourtAPITests(TestCase):
             email='admin@example.com'
         )
         if not hasattr(self.admin_user, 'profile'):
-            MemberProfile.objects.create(user=self.admin_user, role='admin', firstname='Admin', lastname='User', email=self.admin_user.email)
+            Member.objects.create(user=self.admin_user, role='admin', firstname='Admin', lastname='User', email=self.admin_user.email)
         else:
             self.admin_user.profile.role = 'admin'
             self.admin_user.profile.save()
@@ -85,16 +85,16 @@ class CourtBookingTests(TestCase):
         self.client = APIClient()
         
         self.user1 = User.objects.create_user(username='user1', password='pw')
-        self.profile1 = MemberProfile.objects.create(user=self.user1, role='member', firstname='U', lastname='1', email='u1@a.com')
+        self.profile1 = Member.objects.create(user=self.user1, role='member', firstname='U', lastname='1', email='u1@a.com')
         
         self.user2 = User.objects.create_user(username='user2', password='pw')
-        self.profile2 = MemberProfile.objects.create(user=self.user2, role='member', firstname='U', lastname='2', email='u2@a.com')
+        self.profile2 = Member.objects.create(user=self.user2, role='member', firstname='U', lastname='2', email='u2@a.com')
         
         self.user3 = User.objects.create_user(username='user3', password='pw')
-        self.profile3 = MemberProfile.objects.create(user=self.user3, role='member', firstname='U', lastname='3', email='u3@a.com')
+        self.profile3 = Member.objects.create(user=self.user3, role='member', firstname='U', lastname='3', email='u3@a.com')
         
         self.user4 = User.objects.create_user(username='user4', password='pw')
-        self.profile4 = MemberProfile.objects.create(user=self.user4, role='member', firstname='U', lastname='4', email='u4@a.com')
+        self.profile4 = Member.objects.create(user=self.user4, role='member', firstname='U', lastname='4', email='u4@a.com')
         
         self.court = Court.objects.create(number=1)
         self.client.force_authenticate(user=self.user1)

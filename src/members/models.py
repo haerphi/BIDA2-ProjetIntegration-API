@@ -1,7 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-class MemberProfile(models.Model):
+class Member(models.Model):
+    class Meta:
+        db_table = 'members'
+        
     class MemberRole(models.TextChoices):
         MEMBER = 'member', 'Member'
         ADMIN = 'admin', 'Admin'

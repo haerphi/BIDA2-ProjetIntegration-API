@@ -1,38 +1,38 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.contrib.auth.models import User
-from .models import MemberProfile
+from .models import Member
 
-class MemberProfileAPITests(APITestCase):
+class MemberAPITests(APITestCase):
     def setUp(self):
         # Admin user
         self.admin_user = User.objects.create_user(username='admin@test.com', email='admin@test.com', password='adminpassword')
-        self.admin_profile = MemberProfile.objects.create(
+        self.admin_profile = Member.objects.create(
             user=self.admin_user, 
             firstname='Admin', 
             lastname='User', 
             email='admin@test.com',
-            role=MemberProfile.MemberRole.ADMIN
+            role=Member.MemberRole.ADMIN
         )
 
         # Member user
         self.member_user = User.objects.create_user(username='member@test.com', email='member@test.com', password='memberpassword')
-        self.member_profile = MemberProfile.objects.create(
+        self.member_profile = Member.objects.create(
             user=self.member_user, 
             firstname='Member', 
             lastname='User', 
             email='member@test.com',
-            role=MemberProfile.MemberRole.MEMBER
+            role=Member.MemberRole.MEMBER
         )
 
         # Test Member
         self.other_member_user = User.objects.create_user(username='other@test.com', email='other@test.com', password='otherpassword')
-        self.other_member_profile = MemberProfile.objects.create(
+        self.other_member_profile = Member.objects.create(
             user=self.other_member_user, 
             firstname='Other', 
             lastname='Member', 
             email='other@test.com',
-            role=MemberProfile.MemberRole.MEMBER
+            role=Member.MemberRole.MEMBER
         )
 
         self.list_url = '/api/members/'
@@ -83,7 +83,7 @@ class MemberProfileAPITests(APITestCase):
         response = self.client.post(self.list_url, payload)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(email='new@test.com').exists())
-        self.assertTrue(MemberProfile.objects.filter(email='new@test.com').exists())
+        self.assertTrue(Member.objects.filter(email='new@test.com').exists())
 
     def test_create_member_non_admin(self):
         self.client.force_authenticate(user=self.member_user)
@@ -119,7 +119,7 @@ class MemberProfileAPITests(APITestCase):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.delete(self.get_detail_url(self.other_member_profile.id))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(MemberProfile.objects.filter(id=self.other_member_profile.id).exists())
+        self.assertFalse(Member.objects.filter(id=self.other_member_profile.id).exists())
 
     def test_delete_member_non_admin(self):
         self.client.force_authenticate(user=self.member_user)

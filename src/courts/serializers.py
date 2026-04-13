@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.utils import timezone
 from datetime import timedelta
 from .models import Court, Reservation
-from members.models import MemberProfile
+from members.models import Member
 
 class CourtSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,7 +25,7 @@ class ReservationRequestSerializer(serializers.Serializer):
         if len(value) not in [1, 3]:
             raise serializers.ValidationError("The members array must contain exactly 1 or 3 members.")
         
-        existing_members = MemberProfile.objects.filter(id__in=value).count()
+        existing_members = Member.objects.filter(id__in=value).count()
         if existing_members != len(value):
             raise serializers.ValidationError("One or more member IDs provided are invalid or do not exist.")
             

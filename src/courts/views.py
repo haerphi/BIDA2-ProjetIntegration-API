@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from core.accounts.permissions import IsAdminRole
-from members.models import MemberProfile
+from members.models import Member
 from .models import Court, Reservation
 from .serializers import CourtSerializer, ReservationRequestSerializer
 class CourtViewSet(viewsets.ModelViewSet):
@@ -34,7 +34,7 @@ class CourtViewSet(viewsets.ModelViewSet):
                 duration=serializer.validated_data['duration']
             )
             
-            players_to_add = MemberProfile.objects.filter(id__in=members_ids)
+            players_to_add = Member.objects.filter(id__in=members_ids)
             reservation.players.add(*players_to_add)
             if creator not in players_to_add:
                 reservation.players.add(creator)
