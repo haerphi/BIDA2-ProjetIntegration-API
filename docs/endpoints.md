@@ -37,6 +37,7 @@
     "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
   ```
+
 ## Members
 
 - GET /api/members/ : List all members (authenticated)
@@ -254,3 +255,15 @@
   ```
 
 - DELETE /api/courts/<id>/ : Delete a court (admin only)
+
+- POST /api/courts/<id>/book : Book a court for one or two hours
+  - Request :
+
+  ```json
+  {
+    "court_id": 1,
+    "members": [2, 3, 4],
+    "date_time": "2026-04-18T12:00",
+    "duration": 60
+  }
+  ```
