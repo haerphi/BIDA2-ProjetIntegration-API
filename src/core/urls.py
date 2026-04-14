@@ -22,6 +22,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import HelloWorldView, CustomTokenObtainPairView
 from members.views import MemberViewSet
 from courts.views import CourtViewSet
+from system.views import HealthCheckView
 
 router = DefaultRouter()
 router.register(r'members', MemberViewSet)
@@ -30,6 +31,7 @@ router.register(r'courts', CourtViewSet)
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/hello/', HelloWorldView.as_view(), name='hello-world'),
+    path('api/system/health/', HealthCheckView.as_view(), name='healthcheck'),
     path('api/', include(router.urls)),
 
     # Authentification

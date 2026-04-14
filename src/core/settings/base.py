@@ -34,6 +34,7 @@ INSTALLED_APPS = [
 
     'members',
     'courts',
+    'system',
 ]
 
 MIDDLEWARE = [
