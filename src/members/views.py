@@ -14,16 +14,25 @@ from .serializers import (
 )
 
 class MemberViewSet(viewsets.GenericViewSet):
+    """
+    Provides REST API views for viewing and interacting with Members.
+    Includes custom endpoints to handle password reset, profile view/edit.
+    """
     queryset = Member.objects.all()
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    
+    # Filterable and sortable fields
     filterset_fields = [
         'ranking', 'gender', 'is_active', 'affiliation_number', 
-        'email', 'firstname', 'lastname', 'postal_code', 
-        'country', 'phone', 'birth_date', 'role'
+        'email', 'first_name', 'last_name', 'postal_code', 
+        'country', 'phone', 'birth_date'
     ]
-    ordering_fields = ['lastname', 'ranking', 'firstname', 'created_at', 'role']
+    ordering_fields = ['last_name', 'ranking', 'first_name', 'created_at']
 
     def get_serializer_class(self):
+        """
+        Dynamically determine serializer based on the current action being performed.
+        """
         if self.action == 'create':
             return MemberCreateSerializer
         elif self.action in ['set_password', 'me_set_password']:
@@ -31,6 +40,10 @@ class MemberViewSet(viewsets.GenericViewSet):
         return MemberSerializer
 
     def get_permissions(self):
+        """
+        Determine permissions dynamically. Admin role required for structural operations.
+        Otherwise standard IsAuthenticated permission is enforced.
+        """
         admin_actions = ['create', 'update', 'partial_update', 'destroy', 'set_password']
         if self.action in admin_actions:
             permission_classes = [IsAdminRole]
@@ -38,22 +51,31 @@ class MemberViewSet(viewsets.GenericViewSet):
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
 
-    # --- Actions standards ---
+    # --- Standard REST Actions ---
 
     def list(self, request):
-        """ Route: GET /api/members/ """
+        """ 
+        Retrieve a list of Members with optional filtering and ordering parameters.
+        Route: GET /api/members/ 
+        """
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
-        """ Route: GET /api/members/<id>/ """
+        """ 
+        Retrieve the details of a specific Member by primary key.
+        Route: GET /api/members/<id>/ 
+        """
         member = self.get_object() 
         serializer = self.get_serializer(member)
         return Response(serializer.data)
 
     def create(self, request):
-        """ Route: POST /api/members/ """
+        """ 
+        Create a new Member account using the provided data payload.
+        Route: POST /api/members/ 
+        """
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -61,7 +83,10 @@ class MemberViewSet(viewsets.GenericViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None):
-        """ Route: PUT /api/members/<id>/ """
+        """ 
+        Completely update a specific Member instance by replacing its details.
+        Route: PUT /api/members/<id>/ 
+        """
         member = self.get_object()
         serializer = self.get_serializer(member, data=request.data)
         if serializer.is_valid():
@@ -70,7 +95,10 @@ class MemberViewSet(viewsets.GenericViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def partial_update(self, request, pk=None):
-        """ Route: PATCH /api/members/<id>/ """
+        """ 
+        Partially update specific fields on a Member account.
+        Route: PATCH /api/members/<id>/ 
+        """
         member = self.get_object()
         serializer = self.get_serializer(member, data=request.data, partial=True)
         if serializer.is_valid():
@@ -79,79 +107,69 @@ class MemberViewSet(viewsets.GenericViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
-        """ Route: DELETE /api/members/<id>/ """
+        """ 
+        Delete a specific Member instance by ID.
+        Route: DELETE /api/members/<id>/ 
+        """
         member = self.get_object()
-        if member.user:
-            member.user.delete()
-        else:
-            member.delete()
+        member.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    # --- Actions "Custom" ---
+    # --- Custom Endpoints ---
 
     @action(detail=True, methods=['patch'])
     def set_password(self, request, pk=None):
-        """ Route: PATCH /api/members/<id>/set_password/ """
+        """ 
+        Update the password of a specific member account. Primarily for administrative use.
+        Route: PATCH /api/members/<id>/set_password/ 
+        """
         member = self.get_object()
         serializer = self.get_serializer(data=request.data)
         
         if serializer.is_valid():
-            member.user.set_password(serializer.validated_data['password'])
-            member.user.save()
+            member.set_password(serializer.validated_data['password'])
+            member.save()
             return Response({'status': 'Password updated successfully.'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get', 'put', 'patch', 'delete'])
     def me(self, request):
-        """ Route: GET /api/members/me/ (Logged-in member profile) """
-        try:
-            member = request.user.profile
-        except getattr(Member, 'DoesNotExist', Exception):
-            return Response({'error': ' not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = self.get_serializer(member)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=['put'], url_path='me')
-    def me_update(self, request):
-        """ Route: PUT /api/members/me/ (Logged-in member profile update) """
-        try:
-            member = request.user.profile
-        except getattr(Member, 'DoesNotExist', Exception):
-            return Response({'error': ' not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = self.get_serializer(member, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
+        """ 
+        Retrieve or manage the currently authenticated Member's own profile.
+        Route: GET/PUT/PATCH/DELETE /api/members/me/ 
+        """
+        member = request.user
+        
+        # Handle GET action
+        if request.method == 'GET':
+            serializer = self.get_serializer(member)
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=False, methods=['delete'], url_path='me')
-    def me_delete(self, request):
-        """ Route: DELETE /api/members/me/ (Logged-in member profile deletion) """
-        try:
-            member = request.user.profile
-        except getattr(Member, 'DoesNotExist', Exception):
-            return Response({'error': ' not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        if member.user:
-            member.user.delete() # Deleting the User also deletes the Member by cascade
-        else:
+            
+        # Handle PUT/PATCH updates to profile    
+        elif request.method in ['PUT', 'PATCH']:
+            partial = request.method == 'PATCH'
+            serializer = self.get_serializer(member, data=request.data, partial=partial)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Self account deletion request
+        elif request.method == 'DELETE':
             member.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['patch'], url_path='me/set_password')
     def me_set_password(self, request):
-        """ Route: PATCH /api/members/me/set_password/ """
-        try:
-            member = request.user.profile
-        except getattr(Member, 'DoesNotExist', Exception):
-            return Response({'error': ' not found'}, status=status.HTTP_404_NOT_FOUND)
-            
+        """ 
+        Update the currently authenticated user's own password.
+        Route: PATCH /api/members/me/set_password/ 
+        """
+        member = request.user
         serializer = self.get_serializer(data=request.data)
         
         if serializer.is_valid():
-            member.user.set_password(serializer.validated_data['password'])
-            member.user.save()
+            member.set_password(serializer.validated_data['password'])
+            member.save()
             return Response({'status': 'Password updated successfully.'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

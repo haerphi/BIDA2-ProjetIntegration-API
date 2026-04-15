@@ -14,6 +14,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 DEBUG = env('DEBUG', default=False)
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-$)($@26yh1u(x1wx7srs67@)a7bstdk1+)yv8!+%o9da%t9@5-')
+GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default='')
 
 ALLOWED_HOSTS = []
 
@@ -31,6 +32,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken', 
     'drf_spectacular',
     'django_filters',
+    'corsheaders',
 
     'members',
     'courts',
@@ -38,6 +40,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -66,6 +69,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
+# Custom User Model
+AUTH_USER_MODEL = 'members.Member'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
@@ -126,3 +131,12 @@ AUTHENTICATION_BACKENDS = [
     'core.backends.AffiliationNumberBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+])
+CORS_ALLOW_CREDENTIALS = True

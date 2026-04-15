@@ -61,6 +61,12 @@ cp .env.example .env
 poetry run python src/manage.py migrate --settings=core.settings.local
 ```
 
+## Create superuser
+
+```bash
+$env:DJANGO_SUPERUSER_PASSWORD="Test1234="; poetry run python src/manage.py createsuperuser --affiliation_number admin --email admin@example.com --first_name Admin --last_name Admin --noinput
+```
+
 ## Lancement
 
 ```bash
