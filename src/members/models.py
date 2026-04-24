@@ -73,3 +73,7 @@ class Member(AbstractUser):
     def __str__(self):
         """String representation showing user's full name"""
         return f"{self.first_name} {self.last_name}"
+
+    def has_paid_contribution(self):
+        """Check if the member has a completed contribution payment"""
+        return self.contributions.filter(status='completed').exists()

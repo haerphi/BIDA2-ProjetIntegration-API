@@ -16,6 +16,14 @@ DEBUG = env('DEBUG', default=False)
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-$)($@26yh1u(x1wx7srs67@)a7bstdk1+)yv8!+%o9da%t9@5-')
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default='')
 
+STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY', default='')
+STRIPE_WEBHOOK_SECRET = env('STRIPE_WEBHOOK_SECRET', default='')
+
+FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5173')
+
+# Amount in decimal for the contribution (15 EUR)
+CONTRIBUTION_AMOUNT_EUR = 15.00
+
 ALLOWED_HOSTS = []
 
 
@@ -37,6 +45,7 @@ INSTALLED_APPS = [
     'members',
     'courts',
     'system',
+    'contributions',
 ]
 
 MIDDLEWARE = [
