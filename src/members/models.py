@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 
 class MemberManager(BaseUserManager):
     """
@@ -74,6 +75,11 @@ class Member(AbstractUser):
         """String representation showing user's full name"""
         return f"{self.first_name} {self.last_name}"
 
-    def has_paid_contribution(self):
-        """Check if the member has a completed contribution payment"""
-        return self.contributions.filter(status='completed').exists()
+    def has_paid_contribution(self, year=None):
+        """Check if the member has a completed contribution payment. If the year is provided check the year else check the current year.
+            The year must be compared with the year of the "created_at" field of the contribution.
+        """
+        if year:
+            return self.contributions.filter(status='completed', created_at__year=year).exists()
+        else:
+            return self.contributions.filter(status='completed', created_at__year=timezone.now().year).exists()

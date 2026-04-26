@@ -25,6 +25,22 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
     username_field = 'affiliation_number'
 
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        if user.is_superuser:
+            groups = ['admin']
+        else:
+            groups = list(user.groups.values_list('name', flat=True))
+            if user.is_staff and 'staff' not in groups:
+                groups.append('staff')
+
+        token['affiliation_number'] = user.affiliation_number
+        token['contribution_paid'] = user.has_paid_contribution()
+        token['groups'] = groups
+
+        return token
+
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
@@ -98,9 +114,9 @@ class GoogleLoginView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # Generate refresh/access tokens for authenticated user
+        # Generate refresh/access tokens for authenticated user using the custom serializer
         user = serializer.validated_data['user']
-        refresh = RefreshToken.for_user(user)
+        refresh = CustomTokenObtainPairSerializer.get_token(user)
 
         return Response({
             'refresh': str(refresh),
