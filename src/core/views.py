@@ -4,8 +4,9 @@ from rest_framework import serializers, status
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import InvalidToken
 from drf_spectacular.utils import extend_schema
 from google.oauth2 import id_token
 from google.auth.transport import requests
@@ -45,8 +46,29 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
     Extends TokenObtainPairView using CustomTokenObtainPairSerializer for custom login fields.
+    Sets refresh token in HttpOnly cookie.
     """
     serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            refresh_token = response.data.get('refresh')
+            if refresh_token:
+                # Calculate max_age based on settings
+                lifetime = settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME') if hasattr(settings, 'SIMPLE_JWT') else None
+                max_age = lifetime.total_seconds() if lifetime else 7200
+                
+                response.set_cookie(
+                    'refresh_token',
+                    refresh_token,
+                    max_age=int(max_age),
+                    httponly=True,
+                    samesite='Lax',
+                    secure=not settings.DEBUG,
+                )
+                del response.data['refresh']
+        return response
 
 
 class GoogleLoginSerializer(serializers.Serializer):
@@ -118,7 +140,72 @@ class GoogleLoginView(APIView):
         user = serializer.validated_data['user']
         refresh = CustomTokenObtainPairSerializer.get_token(user)
 
-        return Response({
-            'refresh': str(refresh),
+        refresh = CustomTokenObtainPairSerializer.get_token(user)
+
+        response = Response({
             'access': str(refresh.access_token),
         })
+
+        lifetime = settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME') if hasattr(settings, 'SIMPLE_JWT') else None
+        max_age = lifetime.total_seconds() if lifetime else 7200
+
+        response.set_cookie(
+            'refresh_token',
+            str(refresh),
+            max_age=int(max_age),
+            httponly=True,
+            samesite='Lax',
+            secure=not settings.DEBUG,
+        )
+
+        return response
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+    """
+    Custom TokenRefreshView that reads the refresh token from an HttpOnly cookie.
+    """
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.COOKIES.get('refresh_token')
+        
+        if refresh_token:
+            # Inject refresh token into request data for the serializer
+            # request.data might be immutable QueryDict, so we copy it if necessary
+            if hasattr(request.data, '_mutable'):
+                request.data._mutable = True
+            request.data['refresh'] = refresh_token
+            if hasattr(request.data, '_mutable'):
+                request.data._mutable = False
+        else:
+            raise InvalidToken("No valid refresh token found in cookies.")
+
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == 200 and 'refresh' in response.data:
+            # Token was rotated, update the cookie
+            lifetime = settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME') if hasattr(settings, 'SIMPLE_JWT') else None
+            max_age = lifetime.total_seconds() if lifetime else 7200
+
+            response.set_cookie(
+                'refresh_token',
+                response.data['refresh'],
+                max_age=int(max_age),
+                httponly=True,
+                samesite='Lax',
+                secure=not settings.DEBUG,
+            )
+            del response.data['refresh']
+
+        return response
+
+
+class LogoutView(APIView):
+    """
+    Clears the refresh token cookie.
+    """
+    permission_classes = [] # Open to anyone attempting to logout
+
+    def post(self, request):
+        response = Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+        response.delete_cookie('refresh_token')
+        return response

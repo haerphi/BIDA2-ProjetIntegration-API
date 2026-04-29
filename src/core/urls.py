@@ -8,8 +8,7 @@ from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenRefreshView
-from .views import HelloWorldView, CustomTokenObtainPairView, GoogleLoginView
+from .views import HelloWorldView, CustomTokenObtainPairView, GoogleLoginView, CookieTokenRefreshView, LogoutView
 from members.views import MemberViewSet
 from courts.views import CourtViewSet
 from system.views import HealthCheckView
@@ -41,7 +40,8 @@ urlpatterns = [
     # Authentication endpoints (JWT and Google OAuth)
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/google/', GoogleLoginView.as_view(), name='token_obtain_google'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/logout/', LogoutView.as_view(), name='token_logout'),
 
     # Génération du schéma YAML/JSON
 
