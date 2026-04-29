@@ -13,7 +13,7 @@ from .views import HelloWorldView, CustomTokenObtainPairView, GoogleLoginView
 from members.views import MemberViewSet
 from courts.views import CourtViewSet
 from system.views import HealthCheckView
-from contributions.views import CreateCheckoutSessionView, StripeWebhookView, ContributionStatusView
+from contributions.views import CreateCheckoutSessionView, StripeWebhookView, ContributionStatusView, ContributionAmountView
 
 router = DefaultRouter()
 router.register(r'members', MemberViewSet)
@@ -36,6 +36,7 @@ urlpatterns = [
     path('api/contributions/create-checkout-session/', CreateCheckoutSessionView.as_view(), name='create-checkout-session'),
     path('api/contributions/webhook/', StripeWebhookView.as_view(), name='stripe-webhook'),
     path('api/contributions/status/', ContributionStatusView.as_view(), name='contribution-status'),
+    path('api/contributions/amount/', ContributionAmountView.as_view(), name='contribution-amount'),
 
     # Authentication endpoints (JWT and Google OAuth)
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),

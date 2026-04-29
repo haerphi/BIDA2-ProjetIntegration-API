@@ -7,12 +7,19 @@ from rest_framework import status
 from django.http import HttpResponse
 from .models import Contribution
 
-stripe.api_key = settings.STRIPE_SECRET_KEY
 
 class CreateCheckoutSessionView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
+        # Prevent double payments for the current year
+        if request.user.has_paid_contribution():
+            return Response(
+                {'error': 'You have already paid your contribution for this year.'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        stripe.api_key = settings.STRIPE_SECRET_KEY
         try:
             # Create a pending contribution record
             contribution = Contribution.objects.create(
@@ -38,8 +45,8 @@ class CreateCheckoutSessionView(APIView):
                     },
                 ],
                 mode='payment',
-                success_url=f"{settings.FRONTEND_URL}/payment/success",
-                cancel_url=f"{settings.FRONTEND_URL}/payment/cancel",
+                success_url=f"{settings.FRONTEND_URL}/contribution/success",
+                cancel_url=f"{settings.FRONTEND_URL}/contribution/cancel",
                 client_reference_id=str(contribution.id),
                 customer_email=request.user.email,
             )
@@ -74,17 +81,28 @@ class StripeWebhookView(APIView):
             return HttpResponse(status=400)
 
         # Handle the checkout.session.completed event
-        if event['type'] == 'checkout.session.completed':
+        if event['type'] == 'checkout.session.completed':   
             session = event['data']['object']
-            client_reference_id = session.get('client_reference_id')
             
-            if client_reference_id:
-                try:
-                    contribution = Contribution.objects.get(id=client_reference_id)
-                    contribution.status = 'completed'
-                    contribution.save()
-                except Contribution.DoesNotExist:
-                    print(f"Contribution heavily misplaced: ID {client_reference_id} missing")
+            # Check if the payment was successful. For Stripe objects, use dot notation or bracket notation, not .get()
+            payment_status = getattr(session, 'payment_status', None)
+            
+            if payment_status == 'paid':
+                session_id = getattr(session, 'id', None)
+
+                if session_id:
+                    try:
+                        contribution = Contribution.objects.get(stripe_session_id=session_id)
+                        contribution.status = 'completed'
+                        contribution.save()
+                    except Contribution.DoesNotExist:
+                        # TODO put this in a logger: this exception should not happen
+                        print(f"Contribution with session ID {session_id} not found. :(")
+                        pass
+                    
+            else:
+                session_id = getattr(session, 'id', None)
+                print(f"Checkout session {session_id} completed but payment_status is {payment_status}")
 
         return HttpResponse(status=200)
 
@@ -94,4 +112,12 @@ class ContributionStatusView(APIView):
     def get(self, request, *args, **kwargs):
         return Response({
             "has_paid": request.user.has_paid_contribution()
+        }, status=status.HTTP_200_OK)
+
+class ContributionAmountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        return Response({
+            "amount": settings.CONTRIBUTION_AMOUNT_EUR
         }, status=status.HTTP_200_OK)

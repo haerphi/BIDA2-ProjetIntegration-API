@@ -2,6 +2,9 @@ from django.db import models
 from django.conf import settings
 
 class Contribution(models.Model):
+    class Meta:
+        db_table = 'contribution'
+        
     STATUS_CHOICES = (
         ('pending', 'Pending'),
         ('completed', 'Completed'),

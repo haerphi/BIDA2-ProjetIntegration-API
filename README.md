@@ -22,9 +22,17 @@ cp .env.example .env
 
 ## Migration
 
-```bash
-poetry run python src/manage.py migrate --settings=core.settings.local
+### Pour créer un migration
+
+````bash
+ docker compose -p tennis-club exec api poetry run python src/manage.py makemigrations --settings=core.settings local
 ```
+
+### Pour appliquer les migrations
+
+```bash
+docker compose -p tennis-club exec api poetry run python src/manage.py migrate --settings=core.settings.local
+````
 
 ## Create superuser
 

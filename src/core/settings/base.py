@@ -16,15 +16,14 @@ DEBUG = env('DEBUG', default=False)
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-$)($@26yh1u(x1wx7srs67@)a7bstdk1+)yv8!+%o9da%t9@5-')
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default='')
 
-STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY', default='')
+STRIPE_SECRET_KEY = env('STRIPE_API_KEY', default=env('STRIPE_SECRET_KEY', default=''))
 STRIPE_WEBHOOK_SECRET = env('STRIPE_WEBHOOK_SECRET', default='')
 
 FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5173')
 
-# Amount in decimal for the contribution (15 EUR)
-CONTRIBUTION_AMOUNT_EUR = 15.00
-
-ALLOWED_HOSTS = []
+# Amount in decimal for the contribution (201 EUR)
+CONTRIBUTION_AMOUNT_EUR = env('CONTRIBUTION_AMOUNT_EUR', default=201.00)
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', 'api'])
 
 
 # Application definition
@@ -142,10 +141,5 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-])
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 CORS_ALLOW_CREDENTIALS = True
