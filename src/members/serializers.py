@@ -11,13 +11,14 @@ class MemberSerializer(serializers.ModelSerializer):
     firstname = serializers.CharField(source='first_name', required=True)
     lastname = serializers.CharField(source='last_name', required=True)
     role = serializers.SerializerMethodField()
+    contribution_paid = serializers.SerializerMethodField()
 
     class Meta:
         model = Member
         fields = [
             'id', 'firstname', 'lastname', 'email', 'street', 'city',
             'postal_code', 'country', 'phone', 'birth_date', 'gender',
-            'affiliation_number', 'ranking', 'is_active', 'role', 'created_at'
+            'affiliation_number', 'ranking', 'is_active', 'role', 'contribution_paid', 'created_at'
         ]
         read_only_fields = ['created_at']
 
@@ -29,6 +30,12 @@ class MemberSerializer(serializers.ModelSerializer):
         if obj.is_superuser or obj.is_staff or obj.groups.filter(name='admin').exists():
             return 'admin'
         return 'member'
+
+    def get_contribution_paid(self, obj):
+        """
+        Returns boolean indicating whether the member has paid their contribution for the current year.
+        """
+        return obj.has_paid_contribution()
 
     def to_representation(self, instance):
         """
