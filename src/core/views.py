@@ -4,7 +4,7 @@ from rest_framework import serializers, status
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import InvalidToken
 from drf_spectacular.utils import extend_schema
@@ -161,40 +161,60 @@ class GoogleLoginView(APIView):
         return response
 
 
-class CookieTokenRefreshView(TokenRefreshView):
+class CookieTokenRefreshView(APIView):
     """
-    Custom TokenRefreshView that reads the refresh token from an HttpOnly cookie.
+    Custom refresh view that reads the refresh token from an HttpOnly cookie
+    and re-generates the access token with up-to-date custom claims.
     """
+    permission_classes = []
+
     def post(self, request, *args, **kwargs):
         refresh_token = request.COOKIES.get('refresh_token')
-        
-        if refresh_token:
-            # Inject refresh token into request data for the serializer
-            # request.data might be immutable QueryDict, so we copy it if necessary
-            if hasattr(request.data, '_mutable'):
-                request.data._mutable = True
-            request.data['refresh'] = refresh_token
-            if hasattr(request.data, '_mutable'):
-                request.data._mutable = False
-        else:
+
+        if not refresh_token:
             raise InvalidToken("No valid refresh token found in cookies.")
 
-        response = super().post(request, *args, **kwargs)
+        try:
+            old_refresh = RefreshToken(refresh_token)
+        except Exception:
+            raise InvalidToken("Invalid or expired refresh token.")
 
-        if response.status_code == 200 and 'refresh' in response.data:
-            # Token was rotated, update the cookie
-            lifetime = settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME') if hasattr(settings, 'SIMPLE_JWT') else None
-            max_age = lifetime.total_seconds() if lifetime else 7200
+        # Look up the user to re-compute custom claims
+        User = get_user_model()
+        try:
+            user = User.objects.get(id=old_refresh['user_id'])
+        except User.DoesNotExist:
+            raise InvalidToken("User not found.")
 
-            response.set_cookie(
-                'refresh_token',
-                response.data['refresh'],
-                max_age=int(max_age),
-                httponly=True,
-                samesite='Lax',
-                secure=not settings.DEBUG,
-            )
-            del response.data['refresh']
+        if not user.is_active:
+            raise InvalidToken("User account is inactive.")
+
+        # Blacklist the old refresh token (if blacklisting is enabled)
+        try:
+            old_refresh.blacklist()
+        except AttributeError:
+            # Blacklisting not enabled, skip
+            pass
+
+        # Generate a brand-new token pair with current user state
+        new_refresh = CustomTokenObtainPairSerializer.get_token(user)
+
+        response = Response({
+            'access': str(new_refresh.access_token),
+        })
+
+        # Set the new refresh token in the cookie
+        lifetime = settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME') if hasattr(settings, 'SIMPLE_JWT') else None
+        max_age = lifetime.total_seconds() if lifetime else 7200
+
+        response.set_cookie(
+            'refresh_token',
+            str(new_refresh),
+            max_age=int(max_age),
+            httponly=True,
+            samesite='Lax',
+            secure=not settings.DEBUG,
+        )
 
         return response
 
