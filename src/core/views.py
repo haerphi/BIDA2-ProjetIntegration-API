@@ -35,10 +35,16 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             groups = list(user.groups.values_list('name', flat=True))
             if user.is_staff and 'staff' not in groups:
                 groups.append('staff')
+        
+        contribution_paid = user.has_paid_contribution()
+        if contribution_paid:
+            groups.append('paid_member')
 
         token['affiliation_number'] = user.affiliation_number
-        token['contribution_paid'] = user.has_paid_contribution()
+        token['contribution_paid'] = contribution_paid
         token['groups'] = groups
+        token['first_name'] = user.first_name
+        token['last_name'] = user.last_name
 
         return token
 

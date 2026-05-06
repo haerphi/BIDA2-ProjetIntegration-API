@@ -2,6 +2,9 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.core.paginator import Paginator
+from django.utils import timezone
+
 
 from core.accounts.permissions import IsAdminRole
 from django_filters.rest_framework import DjangoFilterBackend
@@ -56,11 +59,37 @@ class MemberViewSet(viewsets.GenericViewSet):
     def list(self, request):
         """ 
         Retrieve a list of Members with optional filtering and ordering parameters.
-        Route: GET /api/members/ 
+        Route: GET /api/members/?page=1&limit=10 
         """
+
+        is_admin = IsAdminRole().has_permission(request, self)
         queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        
+        if not is_admin:
+            current_year = timezone.now().year
+            queryset = queryset.filter(
+                contributions__status='completed', 
+                contributions__created_at__year=current_year
+            ).distinct()
+            
+        queryset = self.filter_queryset(queryset)
+
+        page = request.query_params.get('page', 1)
+        limit = request.query_params.get('limit', 10)
+
+        paginator_instance = Paginator(queryset, limit)
+        page_obj = paginator_instance.get_page(page)
+
+        serializer = self.get_serializer(page_obj.object_list, many=True)
+        members = serializer.data
+
+        return Response({
+            "data": members,
+            "limit": paginator_instance.per_page,
+            "total": paginator_instance.count,
+            "page": page_obj.number,
+            "total_pages": paginator_instance.num_pages
+        }, status=status.HTTP_200_OK)
 
     def retrieve(self, request, pk=None):
         """ 

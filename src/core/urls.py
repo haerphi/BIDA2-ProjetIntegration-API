@@ -12,7 +12,7 @@ from .views import HelloWorldView, CustomTokenObtainPairView, GoogleLoginView, C
 from members.views import MemberViewSet
 from courts.views import CourtViewSet
 from system.views import HealthCheckView
-from contributions.views import CreateCheckoutSessionView, StripeWebhookView, ContributionStatusView, ContributionAmountView
+from contributions.views import CreateCheckoutSessionView, StripeWebhookView, ContributionStatusView, ContributionAmountView, ContributionHistoryView, MemberContributionView
 
 router = DefaultRouter()
 router.register(r'members', MemberViewSet)
@@ -28,7 +28,7 @@ urlpatterns = [
     # System health check endpoint
     path('api/system/health/', HealthCheckView.as_view(), name='healthcheck'),
     
-    # API endpoints registered by the router (members, courts)
+    # API endpoints registered by the router (members, courts, contributions)
     path('api/', include(router.urls)),
     
     # Contributions endpoints
@@ -36,6 +36,9 @@ urlpatterns = [
     path('api/contributions/webhook/', StripeWebhookView.as_view(), name='stripe-webhook'),
     path('api/contributions/status/', ContributionStatusView.as_view(), name='contribution-status'),
     path('api/contributions/amount/', ContributionAmountView.as_view(), name='contribution-amount'),
+    path('api/contributions/history', ContributionHistoryView.as_view(), name='contribution-history'),
+    path('api/contributions/member/', MemberContributionView.as_view(), name='member-contribution-self'),
+    path('api/contributions/member/<int:member_id>/', MemberContributionView.as_view(), name='member-contribution-id'),
 
     # Authentication endpoints (JWT and Google OAuth)
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
