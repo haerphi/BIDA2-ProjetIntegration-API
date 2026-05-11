@@ -117,3 +117,9 @@ class PasswordUpdateSerializer(serializers.Serializer):
     Basic serializer to receive and update user passwords.
     """
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+
+class MemberRoleUpdateSerializer(serializers.Serializer):
+    """
+    Serializer to receive and update a user's role.
+    """
+    role = serializers.CharField(required=True)

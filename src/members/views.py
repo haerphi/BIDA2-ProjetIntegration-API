@@ -13,8 +13,10 @@ from .models import Member
 from .serializers import (
     MemberSerializer, 
     MemberCreateSerializer, 
-    PasswordUpdateSerializer
+    PasswordUpdateSerializer,
+    MemberRoleUpdateSerializer
 )
+from django.contrib.auth.models import Group
 
 class MemberViewSet(viewsets.GenericViewSet):
     """
@@ -47,7 +49,7 @@ class MemberViewSet(viewsets.GenericViewSet):
         Determine permissions dynamically. Admin role required for structural operations.
         Otherwise standard IsAuthenticated permission is enforced.
         """
-        admin_actions = ['create', 'update', 'partial_update', 'destroy', 'set_password']
+        admin_actions = ['create', 'update', 'partial_update', 'destroy', 'set_password', 'update_role', 'list_roles']
         if self.action in admin_actions:
             permission_classes = [IsAdminRole]
         else:
@@ -160,6 +162,46 @@ class MemberViewSet(viewsets.GenericViewSet):
             member.save()
             return Response({'status': 'Password updated successfully.'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['patch'], url_path='role')
+    def update_role(self, request, pk=None):
+        """ 
+        Update the role of a specific member. Admin only.
+        Route: PATCH /api/members/<id>/role/ 
+        """
+        member = self.get_object()
+        serializer = MemberRoleUpdateSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            role = serializer.validated_data['role']
+            
+            member.groups.clear()
+            
+            if role == 'admin':
+                member.is_staff = True
+                admin_group, _ = Group.objects.get_or_create(name='admin')
+                member.groups.add(admin_group)
+            elif role == 'staff':
+                member.is_staff = True
+                staff_group, _ = Group.objects.get_or_create(name='staff')
+                member.groups.add(staff_group)
+            else:
+                member.is_staff = False
+                role_group, _ = Group.objects.get_or_create(name=role)
+                member.groups.add(role_group)
+                
+            member.save()
+            return Response({'status': 'Role updated successfully.'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'], url_path='roles')
+    def list_roles(self, request):
+        """ 
+        List all available roles. Admin only.
+        Route: GET /api/members/roles/ 
+        """
+        roles = Group.objects.values_list('name', flat=True)
+        return Response(sorted(list(roles)), status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get', 'put', 'patch', 'delete'])
     def me(self, request):
