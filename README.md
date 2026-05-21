@@ -25,7 +25,7 @@ cp .env.example .env
 ### Pour créer un migration
 
 ````bash
- docker compose -p tennis-club exec api poetry run python src/manage.py makemigrations --settings=core.settings local
+ docker compose -p tennis-club exec api poetry run python src/manage.py makemigrations --settings=core.settings.local
 ```
 
 ### Pour appliquer les migrations

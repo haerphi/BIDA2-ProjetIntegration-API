@@ -4,7 +4,11 @@ class Court(models.Model):
     """
     Model representing a physical sports court that can be booked by members.
     """
+    class Meta:
+        db_table = 'courts'
+
     number = models.IntegerField(unique=True)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"Court {self.number}"

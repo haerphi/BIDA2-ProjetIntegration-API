@@ -3,6 +3,7 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import Court, Reservation
 from members.models import Member
+from members.serializers import MemberSerializer
 
 class CourtSerializer(serializers.ModelSerializer):
     """
@@ -11,6 +12,16 @@ class CourtSerializer(serializers.ModelSerializer):
     class Meta:
         model = Court
         fields = ['id', 'number']
+
+class ReservationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for listing reservations, providing information about who made it.
+    """
+    creator = MemberSerializer(read_only=True)
+
+    class Meta:
+        model = Reservation
+        fields = ['id', 'court', 'date_time', 'duration', 'creator']
 
 class ReservationRequestSerializer(serializers.Serializer):
     """
