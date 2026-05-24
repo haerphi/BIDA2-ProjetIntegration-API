@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta
+from django.utils import timezone
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -12,7 +15,7 @@ class CourtViewSet(viewsets.ModelViewSet):
     ViewSet for viewing and editing courts, and managing court reservations.
     Provides standard REST actions as well as custom endpoints for booking and cancelling.
     """
-    queryset = Court.objects.filter(is_active=True).order_by('number')
+    queryset = Court.objects.filter(is_active=True).order_by('name')
     serializer_class = CourtSerializer
 
     def get_permissions(self):
@@ -53,54 +56,77 @@ class CourtViewSet(viewsets.ModelViewSet):
         serializer = ReservationSerializer(reservations, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['post'], url_path='book')
-    def book(self, request, pk=None):
+    @action(detail=True, methods=['get', 'post', 'delete'], url_path='reservations')
+    def reservations_detail(self, request, pk=None):
         """
-        Custom endpoint for authenticated members to make a court booking.
-        Route: POST /api/courts/<id>/book/
-        Expects a payload with a list of member IDs, a start date/time and duration.
+        Custom endpoint for managing reservations on a court.
+        GET: Get all the reservations of a court, optionally filtered by 'date' (YYYY-MM-DD).
+        POST: Create a reservation on this court.
+        DELETE: Cancel a reservation using the reservation ID.
         """
-        court = self.get_object()
-        serializer = ReservationRequestSerializer(data=request.data, context={'court': court})
-        
-        if serializer.is_valid():
-            creator = request.user
-            members_ids = serializer.validated_data['members']
+        if request.method == 'GET':
+            court = self.get_object()
+            reservations = Reservation.objects.filter(court=court).select_related('creator').order_by('date_time')
             
-            # Create standard reservation entry linked to request's creator
-            reservation = Reservation.objects.create(
-                court=court,
-                creator=creator,
-                date_time=serializer.validated_data['date_time'],
-                duration=serializer.validated_data['duration']
-            )
+            date_str = request.query_params.get('date')
+            if date_str:
+                try:
+                    datetime.strptime(date_str, '%Y-%m-%d')
+                    reservations = reservations.filter(date_time__date=date_str)
+                except ValueError:
+                    return Response(
+                        {'error': 'Invalid date format. Expected YYYY-MM-DD.'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
             
-            # Retrieve all listed members from DB
-            players_to_add = Member.objects.filter(id__in=members_ids)
-            reservation.players.add(*players_to_add)
+            serializer = ReservationSerializer(reservations, many=True, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
             
-            # Automatically add creator to players list if they aren't explicitly passed
-            if creator not in players_to_add:
-                reservation.players.add(creator)
+        elif request.method == 'POST':
+            court = self.get_object()
+            serializer = ReservationRequestSerializer(data=request.data, context={'court': court})
+            
+            if serializer.is_valid():
+                creator = request.user
+                members_ids = serializer.validated_data['members']
                 
-            return Response({
-                'reservation_id': reservation.id,
-                'court_id': court.id,
-                'date_time': reservation.date_time,
-                'duration': reservation.duration
-            }, status=status.HTTP_201_CREATED)
+                # Create standard reservation entry linked to request's creator
+                reservation = Reservation.objects.create(
+                    court=court,
+                    creator=creator,
+                    date_time=serializer.validated_data['date_time'],
+                    duration=serializer.validated_data['duration']
+                )
+                
+                # Retrieve all listed members from DB
+                players_to_add = Member.objects.filter(id__in=members_ids)
+                reservation.players.add(*players_to_add)
+                
+                # Automatically add creator to players list if they aren't explicitly passed
+                if creator not in players_to_add:
+                    reservation.players.add(creator)
+                    
+                return Response({
+                    'reservation_id': reservation.id,
+                    'court_id': court.id,
+                    'date_time': reservation.date_time,
+                    'duration': reservation.duration
+                }, status=status.HTTP_201_CREATED)
+                
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=True, methods=['delete'], url_path='book')
-    def cancel(self, request, pk=None):
-        """
-        Endpoint to cancel/delete a reservation on this court.
-        Route: DELETE /api/courts/<id>/book/
-        Uses Reservation pk directly or logic expects the reservation instance (this may need to be adapted based on routing design if pk belongs to Court here instead of Reservation).
-        """
-        # Note: If pk is the court id, this will fetch the court, not the reservation. 
-        # But per the code provided, this endpoint attempts to delete the court if pk is the reservation id.
-        reservation = self.get_object()
-        reservation.delete()
-        return Response({'status': 'Reservation cancelled successfully'}, status=status.HTTP_200_OK)
+        elif request.method == 'DELETE':
+            # Retrieve the reservation by primary key (pk in the URL)
+            reservation = get_object_or_404(Reservation, pk=pk)
+            
+            # Ensure reservation is only cancelled 1 or more days before the reservation date
+            reservation_date = reservation.date_time.date()
+            current_date = timezone.now().date()
+            if (reservation_date - current_date).days < 1:
+                return Response(
+                    {'error': 'Reservations can only be cancelled 1 or more days before the reservation date.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            reservation.delete()
+            return Response({'status': 'Reservation cancelled successfully'}, status=status.HTTP_200_OK)

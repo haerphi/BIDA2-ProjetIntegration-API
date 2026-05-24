@@ -11,7 +11,7 @@ class CourtSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Court
-        fields = ['id', 'number']
+        fields = ['id', 'name']
 
 class ReservationSerializer(serializers.ModelSerializer):
     """

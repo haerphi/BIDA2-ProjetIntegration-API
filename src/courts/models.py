@@ -7,11 +7,11 @@ class Court(models.Model):
     class Meta:
         db_table = 'courts'
 
-    number = models.IntegerField(unique=True)
+    name = models.CharField(max_length=100, unique=True)
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"Court {self.number}"
+        return f"Court {self.name}"
 
 class Reservation(models.Model):
     """
