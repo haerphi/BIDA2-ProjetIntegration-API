@@ -146,8 +146,6 @@ class GoogleLoginView(APIView):
         user = serializer.validated_data['user']
         refresh = CustomTokenObtainPairSerializer.get_token(user)
 
-        refresh = CustomTokenObtainPairSerializer.get_token(user)
-
         response = Response({
             'access': str(refresh.access_token),
         })

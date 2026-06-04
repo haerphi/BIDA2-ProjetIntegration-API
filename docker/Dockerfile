@@ -18,4 +18,4 @@ COPY . .
 EXPOSE 8000
 
 # Default command (applies database migrations and runs server)
-CMD ["sh", "-c", "python src/manage.py migrate && python src/manage.py runserver 0.0.0.0:8000"]
+CMD ["sh", "-c", "poetry run python src/manage.py migrate && poetry run python src/manage.py runserver 0.0.0.0:8000"]

@@ -24,21 +24,19 @@ class CreateCheckoutSessionView(APIView):
 
         stripe.api_key = settings.STRIPE_SECRET_KEY
         try:
-            # Create a pending contribution record
             contribution = Contribution.objects.create(
                 member=request.user,
                 amount=settings.CONTRIBUTION_AMOUNT_EUR,
                 status='pending'
             )
 
-            # Create a Stripe Checkout Session
             checkout_session = stripe.checkout.Session.create(
-                payment_method_types=['card', 'bancontact', 'ideal'], # Common European methods
+                payment_method_types=['card', 'bancontact', 'ideal'],
                 line_items=[
                     {
                         'price_data': {
                             'currency': 'eur',
-                            'unit_amount': int(settings.CONTRIBUTION_AMOUNT_EUR * 100), # Amount in cents
+                            'unit_amount': int(settings.CONTRIBUTION_AMOUNT_EUR * 100),
                             'product_data': {
                                 'name': 'Annual Club Contribution',
                                 'description': f'Contribution for member {request.user.first_name} {request.user.last_name}',
@@ -54,7 +52,6 @@ class CreateCheckoutSessionView(APIView):
                 customer_email=request.user.email,
             )
 
-            # Save the session ID to the contribution
             contribution.stripe_session_id = checkout_session.id
             contribution.save()
 
@@ -76,18 +73,14 @@ class StripeWebhookView(APIView):
             event = stripe.Webhook.construct_event(
                 payload, sig_header, endpoint_secret
             )
-        except ValueError as e:
-            # Invalid payload
+        except ValueError:
             return HttpResponse(status=400)
-        except stripe.error.SignatureVerificationError as e:
-            # Invalid signature
+        except stripe.error.SignatureVerificationError:
             return HttpResponse(status=400)
 
-        # Handle the checkout.session.completed event
-        if event['type'] == 'checkout.session.completed':   
+        if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
             
-            # Check if the payment was successful. For Stripe objects, use dot notation or bracket notation, not .get()
             payment_status = getattr(session, 'payment_status', None)
             
             if payment_status == 'paid':
@@ -99,8 +92,7 @@ class StripeWebhookView(APIView):
                         contribution.status = 'completed'
                         contribution.save()
                     except Contribution.DoesNotExist:
-                        # TODO put this in a logger: this exception should not happen
-                        print(f"Contribution with session ID {session_id} not found. :(")
+                        print(f"Contribution with session ID {session_id} not found.")
                         pass
                     
             else:
@@ -151,7 +143,6 @@ class ContributionHistoryView(APIView):
         year = request.query_params.get('year', None)
         contribution_status = request.query_params.get('status', None)
 
-        # Validate pagination params
         try:
             page = int(request.query_params.get('page', 1))
             if page < 1:
@@ -165,7 +156,6 @@ class ContributionHistoryView(APIView):
         except (TypeError, ValueError):
             limit = 10
 
-        # Build query dynamically
         query = Q()
         if first_name:
             query &= Q(member__first_name__icontains=first_name.strip()) 
@@ -186,30 +176,30 @@ class ContributionHistoryView(APIView):
             if status_val and status_val != 'all':
                 query &= Q(status=status_val)
 
-        all_contributions = Contribution.objects.filter(query).select_related('member').order_by('-created_at')
-        paginator_instance = paginator.Paginator(all_contributions, limit)
-        page_obj = paginator_instance.get_page(page)
+        qs = Contribution.objects.filter(query).select_related('member').order_by('-created_at')
+        pager = paginator.Paginator(qs, limit)
+        page_obj = pager.get_page(page)
 
-        # serialize the contributions
-        contributions_serialized = []
-        for contribution in page_obj:
-            contributions_serialized.append({
-                'id': contribution.id,
-                'member_id': contribution.member_id,
-                'first_name': contribution.member.first_name,
-                'last_name': contribution.member.last_name,
-                'email': contribution.member.email,
-                'amount': contribution.amount,
-                'status': contribution.status,
-                'created_at': contribution.created_at,
-                'updated_at': contribution.updated_at
-            })
+        data = [
+            {
+                'id': c.id,
+                'member_id': c.member_id,
+                'first_name': c.member.first_name,
+                'last_name': c.member.last_name,
+                'email': c.member.email,
+                'amount': c.amount,
+                'status': c.status,
+                'created_at': c.created_at,
+                'updated_at': c.updated_at
+            }
+            for c in page_obj
+        ]
         return Response({
-            "data": contributions_serialized,
-            "limit": paginator_instance.per_page,
-            "total": paginator_instance.count,
+            "data": data,
+            "limit": pager.per_page,
+            "total": pager.count,
             "page": page_obj.number,
-            "total_pages": paginator_instance.num_pages
+            "total_pages": pager.num_pages
         }, status=status.HTTP_200_OK)
 
 
@@ -218,21 +208,18 @@ class MemberContributionView(APIView):
 
     def get(self, request, member_id=None, *args, **kwargs):
         if member_id:
-            # If member_id is provided, check if the requester is an admin
             if not request.user.is_staff:
                 return Response(
-                    {"error": "You must be an admin to view other members' contributions."}, 
+                    {"error": "You must be an admin to view other members' contributions."},
                     status=status.HTTP_403_FORBIDDEN
                 )
             target_member_id = member_id
         else:
-            # If no member_id, use the current user
             target_member_id = request.user.id
 
         q_status = request.query_params.get('status', None)
         q_year = request.query_params.get('year', None)
 
-        # Validate pagination params
         try:
             page = int(request.query_params.get('page', 1))
             if page < 1:
@@ -259,27 +246,26 @@ class MemberContributionView(APIView):
             if year_val.isdigit():
                 query &= Q(created_at__year=year_val)
 
-        contributions = Contribution.objects.filter(query).order_by('-created_at')
-        
-        paginator_instance = paginator.Paginator(contributions, limit)
-        page_obj = paginator_instance.get_page(page)
+        qs = Contribution.objects.filter(query).order_by('-created_at')
+        pager = paginator.Paginator(qs, limit)
+        page_obj = pager.get_page(page)
 
-        # Serialize the contributions
-        contributions_serialized = []
-        for contribution in page_obj:
-            contributions_serialized.append({
-                'id': contribution.id,
-                'member_id': contribution.member_id,
-                'amount': contribution.amount,
-                'status': contribution.status,
-                'created_at': contribution.created_at,
-                'updated_at': contribution.updated_at
-            })
-            
+        data = [
+            {
+                'id': c.id,
+                'member_id': c.member_id,
+                'amount': c.amount,
+                'status': c.status,
+                'created_at': c.created_at,
+                'updated_at': c.updated_at
+            }
+            for c in page_obj
+        ]
+
         return Response({
-            "data": contributions_serialized,
-            "limit": paginator_instance.per_page,
-            "total": paginator_instance.count,
+            "data": data,
+            "limit": pager.per_page,
+            "total": pager.count,
             "page": page_obj.number,
-            "total_pages": paginator_instance.num_pages
+            "total_pages": pager.num_pages
         }, status=status.HTTP_200_OK)

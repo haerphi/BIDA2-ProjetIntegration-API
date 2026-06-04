@@ -18,6 +18,12 @@ class Reservation(models.Model):
     Model to track court bookings (reservations).
     Each reservation tracks its creator, who is playing, and the time slot details.
     """
+    TYPE_CHOICES = [
+        ('simple', 'Simple'),
+        ('double', 'Double'),
+        ('blocage_admin', 'Blocage Admin'),
+    ]
+
     court = models.ForeignKey(Court, on_delete=models.CASCADE, related_name='reservations')
     
     # Track the specific member who made the booking request
@@ -28,6 +34,8 @@ class Reservation(models.Model):
     
     date_time = models.DateTimeField()
     duration = models.IntegerField() # In minutes
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='simple')
+    comment = models.TextField(blank=True, null=True)
 
     class Meta:
         db_table = 'reservation'
