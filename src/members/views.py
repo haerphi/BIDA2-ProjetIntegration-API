@@ -4,30 +4,71 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.core.paginator import Paginator
 from django.utils import timezone
-
+from django.db.models import Q
+import django_filters
 
 from core.accounts.permissions import IsAdminRole
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
-from .models import Member
+from .models import Member, Category
 from .serializers import (
     MemberSerializer, 
     MemberCreateSerializer, 
     PasswordUpdateSerializer,
-    MemberRoleUpdateSerializer
+    MemberRoleUpdateSerializer,
+    CategorySerializer
 )
 from django.contrib.auth.models import Group
+
+class MemberFilter(django_filters.FilterSet):
+    category = django_filters.ModelChoiceFilter(
+        queryset=Category.objects.all(),
+        method='filter_by_category'
+    )
+
+    class Meta:
+        model = Member
+        fields = [
+            'ranking', 'gender', 'is_active', 'affiliation_number', 
+            'email', 'first_name', 'last_name', 'postal_code', 
+            'country', 'phone', 'birth_date'
+        ]
+
+    def filter_by_category(self, queryset, name, value):
+        if not value:
+            return queryset
+            
+        current_year = timezone.now().year
+        q_obj = Q()
+        
+        if value.min_age is not None:
+            max_birth_year = current_year - value.min_age
+            q_obj &= Q(birth_date__year__lte=max_birth_year)
+            
+        if value.max_age is not None:
+            min_birth_year = current_year - value.max_age
+            q_obj &= Q(birth_date__year__gte=min_birth_year)
+            
+        if value.gender:
+            q_obj &= Q(gender=value.gender)
+            
+        q_obj &= Q(birth_date__isnull=False)
+        return queryset.filter(q_obj)
+
+
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Category.objects.all().order_by('id')
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
+
 
 class MemberViewSet(viewsets.GenericViewSet):
     queryset = Member.objects.all()
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
-    filterset_fields = [
-        'ranking', 'gender', 'is_active', 'affiliation_number', 
-        'email', 'first_name', 'last_name', 'postal_code', 
-        'country', 'phone', 'birth_date'
-    ]
+    filterset_class = MemberFilter
     search_fields = ['first_name', 'last_name', 'email']
     ordering_fields = ['last_name', 'ranking', 'first_name', 'created_at']
+
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -176,6 +217,7 @@ class MemberViewSet(viewsets.GenericViewSet):
         
         if serializer.is_valid():
             member.set_password(serializer.validated_data['password'])
+            member.is_first_login = False
             member.save()
             return Response({'status': 'Password updated successfully.'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

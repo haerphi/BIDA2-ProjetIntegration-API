@@ -9,7 +9,7 @@ from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from rest_framework.routers import DefaultRouter
 from .views import HelloWorldView, CustomTokenObtainPairView, GoogleLoginView, CookieTokenRefreshView, LogoutView
-from members.views import MemberViewSet
+from members.views import MemberViewSet, CategoryViewSet
 from courts.views import CourtViewSet
 from system.views import HealthCheckView
 from contributions.views import CreateCheckoutSessionView, StripeWebhookView, ContributionStatusView, ContributionAmountView, ContributionHistoryView, MemberContributionView
@@ -17,6 +17,8 @@ from contributions.views import CreateCheckoutSessionView, StripeWebhookView, Co
 router = DefaultRouter()
 router.register(r'members', MemberViewSet)
 router.register(r'courts', CourtViewSet)
+router.register(r'categories', CategoryViewSet)
+
 
 urlpatterns = [
     # Admin interface

@@ -48,6 +48,7 @@ class Member(AbstractUser):
     # Remove standard username as we use affiliation_number instead
     username = None
     email = models.EmailField(_("email address"), unique=True)
+    is_first_login = models.BooleanField(default=True)
     
     # Custom identifier for authentication
     affiliation_number = models.CharField(max_length=50, unique=True)
@@ -83,3 +84,22 @@ class Member(AbstractUser):
             return self.contributions.filter(status='completed', created_at__year=year).exists()
         else:
             return self.contributions.filter(status='completed', created_at__year=timezone.now().year).exists()
+
+
+class Category(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    min_age = models.IntegerField(null=True, blank=True)
+    max_age = models.IntegerField(null=True, blank=True)
+    gender = models.CharField(
+        max_length=20, 
+        choices=Member.Gender.choices, 
+        null=True, 
+        blank=True
+    )
+
+    class Meta:
+        db_table = 'categories'
+        verbose_name_plural = 'categories'
+
+    def __str__(self):
+        return self.name

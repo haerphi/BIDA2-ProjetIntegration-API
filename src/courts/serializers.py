@@ -18,10 +18,11 @@ class ReservationSerializer(serializers.ModelSerializer):
     Serializer for listing reservations, providing information about who made it.
     """
     creator = MemberSerializer(read_only=True)
+    players = MemberSerializer(many=True, read_only=True)
 
     class Meta:
         model = Reservation
-        fields = ['id', 'court', 'date_time', 'duration', 'creator', 'type', 'comment']
+        fields = ['id', 'court', 'date_time', 'duration', 'creator', 'players', 'type', 'comment']
 
 class ReservationRequestSerializer(serializers.Serializer):
     """
@@ -35,6 +36,7 @@ class ReservationRequestSerializer(serializers.Serializer):
     date_time = serializers.DateTimeField()
     duration = serializers.IntegerField()
     comment = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    creator = serializers.IntegerField(required=False)
 
     def validate_date_time(self, value):
         """
@@ -79,14 +81,33 @@ class ReservationRequestSerializer(serializers.Serializer):
                 if not is_admin:
                     raise serializers.ValidationError({"type": "Only admins, staff, or members of the admin group can create a blocage_admin reservation."})
 
+        # Resolve creator
+        request = self.context.get('request')
+        creator_user = request.user if request else None
+
+        is_admin = False
+        if creator_user:
+            is_admin = creator_user.is_superuser or creator_user.is_staff or creator_user.groups.filter(name='admin').exists()
+
+        creator_id = data.get('creator')
+        if creator_id is not None:
+            if is_admin:
+                try:
+                    creator_user = Member.objects.get(id=creator_id)
+                except Member.DoesNotExist:
+                    raise serializers.ValidationError({"creator": "The specified creator does not exist."})
+            else:
+                raise serializers.ValidationError({"creator": "Only administrators or staff can specify a different creator."})
+
+        data['creator'] = creator_user
+
         # Verify valid inputs against member roster if any members are provided
         if members:
             existing_members = Member.objects.filter(id__in=members).count()
             if existing_members != len(members):
                 raise serializers.ValidationError({"members": "One or more member IDs provided are invalid or do not exist."})
 
-            request = self.context.get('request')
-            creator = request.user if request else None
+            creator = data['creator']
             
             # Retrieve player objects
             players = list(Member.objects.filter(id__in=members))

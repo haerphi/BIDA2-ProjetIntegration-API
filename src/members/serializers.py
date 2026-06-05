@@ -1,6 +1,16 @@
 from rest_framework import serializers
 from django.contrib.auth.models import Group
-from .models import Member
+from django.utils import timezone
+from .models import Member, Category
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Category model.
+    """
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'min_age', 'max_age', 'gender']
 
 
 class MemberSerializer(serializers.ModelSerializer):
@@ -12,14 +22,16 @@ class MemberSerializer(serializers.ModelSerializer):
     lastname = serializers.CharField(source='last_name', required=True)
     role = serializers.SerializerMethodField()
     contribution_paid = serializers.SerializerMethodField()
+    categories = serializers.SerializerMethodField()
 
     class Meta:
         model = Member
         fields = [
             'id', 'firstname', 'lastname', 'email', 'street', 'city',
             'postal_code', 'country', 'phone', 'birth_date', 'gender',
-            'affiliation_number', 'ranking', 'is_active', 'role', 'contribution_paid', 'created_at'
+            'affiliation_number', 'ranking', 'is_active', 'role', 'contribution_paid', 'categories', 'created_at'
         ]
+
         read_only_fields = ['created_at']
 
     def get_role(self, obj):
@@ -36,6 +48,33 @@ class MemberSerializer(serializers.ModelSerializer):
         Returns boolean indicating whether the member has paid their contribution for the current year.
         """
         return obj.has_paid_contribution()
+
+    def get_categories(self, obj):
+        """
+        Determine eligible categories for the member based on age and gender.
+        """
+        if not obj.birth_date:
+            return []
+        
+        current_year = timezone.now().year
+        age = current_year - obj.birth_date.year
+
+        all_categories = self.context.get('all_categories')
+        if all_categories is None:
+            all_categories = list(Category.objects.all())
+            self.context['all_categories'] = all_categories
+
+        matching_categories = []
+        for cat in all_categories:
+            if cat.gender and obj.gender != cat.gender:
+                continue
+            if cat.min_age is not None and age < cat.min_age:
+                continue
+            if cat.max_age is not None and age > cat.max_age:
+                continue
+            matching_categories.append(cat.name)
+            
+        return matching_categories
 
     def to_representation(self, instance):
         """

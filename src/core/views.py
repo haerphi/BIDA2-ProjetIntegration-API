@@ -42,9 +42,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         token['affiliation_number'] = user.affiliation_number
         token['contribution_paid'] = contribution_paid
+        token['is_first_login'] = user.is_first_login
         token['groups'] = groups
         token['first_name'] = user.first_name
         token['last_name'] = user.last_name
+        token['is_first_login'] = user.is_first_login
 
         return token
 
